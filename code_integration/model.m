@@ -142,40 +142,58 @@ switch modelpar.model
 %                 cd ../
         tip_pts = [];
 
-case 'Bhaskar'
-    % ===== Add Bhaskar's Model Path (if needed) =====
-    addpath('path_to_Bhaskar_Code');
+    case 'Bhaskar'
+        % If needed, add path to Bhaskar code:
+        % addpath('path_to_Bhaskar_Code');
 
-    % ===== Load Existing ParamSweep_1.mat to Keep 'n' =====
-    if isfile('ParamSweep_1.mat')
-        load('ParamSweep_1.mat'); % Load existing parameters, including 'n'
-    else
-        error('ParamSweep_1.mat not found! Run parameter sweep first.');
-    end
+        % If ParamSweep_1.mat is used:
+        if isfile('ParamSweep_1.mat')
+            load('ParamSweep_1.mat','n');  % typically has 'n'
+        end
+        
+        % Overwrite if needed
+        RR = modelpar.RR; % Orange-Orange
+        RG = modelpar.RG; % Blue-Orange
+        GG = modelpar.GG; % Blue-Blue
+        pol_val = modelpar.pol_val; 
+        cell_pop_prop = modelpar.cell_pop_prop;
+        save('ParamSweep_1.mat','RR','RG','GG','pol_val','cell_pop_prop','-append');
 
-    % ===== Update Only the Necessary Parameters =====
-    RR = modelpar.RR; % Orange-Orange adhesion
-    RG = modelpar.RG; % Blue-Orange adhesion
-    GG = modelpar.GG; % Blue-Blue adhesion
-    pol_val = modelpar.pol_val; % Polarity strength
-    cell_pop_prop = modelpar.cell_pop_prop; % Population ratio
+        % Run the Bhaskar code (task_id=1)
+        coculture_model(1);
 
-    % ===== Save Updated File Without Removing 'n' =====
-    save('ParamSweep_1.mat', 'RR', 'RG', 'GG', 'pol_val', 'cell_pop_prop', '-append');
+        % Example: load time-step 500000
+        pos_file = 'ParamSweep_1_Output/Pos_0500000.dat';
+        type_file = 'ParamSweep_1_Output/Types_0500000.dat';
+        
+        if ~exist(pos_file,'file') || ~exist(type_file,'file')
+            warning('Bhaskar output not found at time 500000. pattern=[]');
+            pattern = [];
+            return;
+        end
+        
+        % Load positions & types
+        posdata = load(pos_file);
+        posdata = posdata(:);  % ensure column
+        typedata = load(type_file);
+        typedata = typedata(:);        
+        
+        if length(posdata) ~= length(typedata)
+            warning('Mismatch: positions vs. types. pattern=[]');
+            pattern = [];
+            return;
+        end
 
-    % ===== Run Bhaskar’s Model =====
-    coculture_model(1); % task_id = 1
+        % Create final pattern array [X, Y, type]
+        X = real(posdata);
+        Y = imag(posdata);
+        pattern = [X, Y, typedata];
+        
+        % Return immediately, skipping 'select set' logic
+        return
+    % ============ END BHASKAR CASE ============
 
-    % ===== Load Output from Bhaskar's Model =====
-    positions = load('ParamSweep_1_Output/Pos_5000000.dat');
-    types = load('ParamSweep_1_Output/Types_5000000.dat');
-
-    % ===== Format Output =====
-    X = real(positions); % X-coordinates
-    Y = imag(positions); % Y-coordinates
-    pattern = [X, Y, types];
-
-end
+end % end switch modelpar.model
 
 % Select set
 switch modelpar.sets

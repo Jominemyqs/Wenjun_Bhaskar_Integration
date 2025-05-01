@@ -76,7 +76,7 @@ cell_types = arrayfun(@(x) find(cumulative_prob >= x, 1, 'first'), rand_nums);
 
     % Iteration numbers
     itr = 0;
-    end_time = 5000000;
+    end_time = 500000;
 
     while (itr <= end_time)
 
